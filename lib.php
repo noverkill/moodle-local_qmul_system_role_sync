@@ -1,22 +1,9 @@
 <?php
 
 // This file is part of Moodle - http://moodle.org/
-//
-// Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Moodle is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Lib functions (cron) to automatically JP Students
+ * Lib functions (for cron) to automatically JP Students
  * if it was not done all at once during the main upgrade.
  *
  * @package    local
@@ -26,8 +13,86 @@
  */
 
 /**
- * Standard cron function
+ * This function does the cron process within the time range according to settings.
+ * please
+ * @return
  */
+function local_qmul_system_role_sync_process() {
+
+    global $DB;
+
+    $line_number = 0;
+    $users_assigned = 0;
+    $users_notassigned = 0;
+    $config = get_config('local/qmul_system_role_sync');
+
+    if (empty($config))
+        $config = new stdClass();
+
+// let's define few useful strings  -  path on moodle01 production server, dedicated to upload MIS and other needed files
+
+    if (!defined($config->filepath)){
+        $config->filepath = '//u//web//qmulmis//mis_uploads//';      //location pointed to QMUL by ULCC to upload MIS and other files
+        }
+    if (!defined($config->filename)){
+        $config->filename = 'BUPT_accounts.csv';                    // filename containing all JP Students usernames
+        }
+    if (!defined($config->rolename)){
+        $config->rolename = 'JP Student';                           // role name to assign on the system level
+        }
+
+    $role = $DB->get_record('role', array('name'=>$config->rolename));  // name of the role to assign to system context
+    $context = get_context_instance( CONTEXT_SYSTEM);
+
+
+//get users from the file - file syntax: one column of usernames separated by line termination (\r\n),
+//first row contains "username" string - will be skipped in processing
+
+    $arrLines = file($config->filepath.$config->filename);
+
+    if (empty($arrLines)) {
+        mtrace('qmul_system_role_sync: empty file, finishing...');
+        return;
+    }
+
+    mtrace('qmul_system_role_sync: processing ...');
+
+//process assignments
+    foreach ($arrLines as $line) {
+
+        $line = rtrim($line, "\r\n");
+
+        if ($line_number!= 0){                      //condition: "USERNAME" is the first column in the table
+            $username = array('username'=>$line);
+            $dbUser = $DB->get_record('user', array('username'=>$line));
+
+            if (!empty($dbUser)){
+                $role_assignment_id = role_assign($role->id, $dbUser->id, $context->id);
+                if (!empty($role_assignment_id))
+                    $users_assigned++;
+                else
+                    $users_notassigned++;
+            } else {
+                echo('Error assigning user, username: '. $line.',  ' );
+                $users_notassigned++;
+            }
+        }
+        $line_number++;
+    }
+
+    mtrace( ' qmul_system_role_sync: Done. JP Students role assignment finished,  Users processed: '.($line_number-1).
+            ',   Users assigned: '.$users_assigned.
+            ',   '. 'Users not assigned: '.$users_notassigned);
+
+    return;
+}
+
+
+/**
+ * Standard cron function for processing JP students role assignments
+ * - needs to uncomment line containing "$plugin->cron = .." in vaersion.php to run cron function periodically
+ */
+
 function local_qmul_system_role_sync_cron() {
     $settings = get_config('local_qmul_system_role_sync');
     if (empty($settings->cronenabled)) {
@@ -42,51 +107,4 @@ function local_qmul_system_role_sync_cron() {
         mtrace($e->getMessage());
     }
     mtrace('qmul_system_role_sync: local_qmul_system_role_sync_cron() finished at ' . date('H:i:s'));
-}
-
-/**
- * This function does the cron process within the time range according to settings.
- */
-function local_qmul_system_role_sync_process() {
-    global $CFG;
-    require_once(dirname(__FILE__) . '/locallib.php');
-
-    if (!local_qmul_system_role_sync_is_upgraded()) {
-        mtrace('qmul_system_role_sync: site not yet upgraded. Doing nothing.');
-        return;
-    }
-
-    require_once(dirname(__FILE__) . '/afterupgradelib.php');
-
-    $hour = (int) date('H');
-    if ($hour < $settings->starthour || $hour >= $settings->stophour) {
-        mtrace('qmul_system_role_sync: not between starthour and stophour, so doing nothing (hour = ' .
-                $hour . ').');
-        return;
-    }
-
-    $stoptime = time() + $settings->procesingtime;
-
-    mtrace('qmul_system_role_sync: processing ...');
-    while (time() < $stoptime) {
-
-        $quiz = local_qeupgradehelper_get_quiz_for_upgrade();
-        if (!$quiz) {
-            mtrace('qmul_system_role_sync: No more quizzes to process. You should probably disable the qmul_system_role_sync cron settings now.');
-            break; // No more to do;
-        }
-
-        $quizid = $quiz->id;
-        $quizsummary = local_qeupgradehelper_get_quiz($quizid);
-        if ($quizsummary) {
-            mtrace('  starting upgrade of attempts at quiz ' . $quizid);
-            $upgrader = new local_qeupgradehelper_attempt_upgrader(
-                    $quizsummary->id, $quizsummary->numtoconvert);
-            $upgrader->convert_all_quiz_attempts();
-            mtrace('  upgrade of quiz ' . $quizid . ' complete.');
-        }
-    }
-
-    mtrace('qmul_system_role_sync: Done.');
-    return;
 }
