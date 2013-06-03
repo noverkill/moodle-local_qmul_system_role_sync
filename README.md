@@ -1,2 +1,2 @@
-moodle-block_qmul_system_role_sync
+moodle-local_qmul_system_role_sync
 ==================================
