@@ -21,12 +21,19 @@
  * You can have a rather longer description of the file as well,
  * if you like, and it can span multiple lines.
  *
- * @package    install
+ * @package    upgrade
  * @category   '$PWD'
  * @copyright  2013 Queen Mary University Gerry Hall
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- function xmldb_local_qmul_system_role_sync_install($oldversion =0) {
+ function xmldb_local_qmul_system_role_sync_upgrade($oldversion =0) {
+			$config = new stdClass();
+	        $config->filepath = '//u//web//qmulmis//mis_uploads//';      //location pointed to QMUL by ULCC to upload MIS and other files
+	        $config->filename = 'BUPT_accounts.csv';                    // filename containing all JP Students usernames
+	        $config->rolename = 'JP Student';                           // role name to assign on the system level
+			foreach ($config as $property => $property_value) {
+	            set_config($property, $property_value, 'local/qmul_system_role_sync');
+
   return true;
 }
