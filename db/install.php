@@ -27,12 +27,5 @@
  */
 
  function xmldb_local_qmul_system_role_sync_install($oldversion =0) {
-		$config = new stdClass();
-     $config->filepath = '//u//web//qmulmis//mis_uploads//';      //location pointed to QMUL by ULCC to upload MIS and other files
-     $config->filename = 'BUPT_accounts.csv';                    // filename containing all JP Students usernames
-     $config->rolename = 'JP Student';                           // role name to assign on the system level
-		foreach ($config as $property => $property_value) {
-         set_config($property, $property_value, 'qmul_system_role_sync');
-		}
 		return true;
 }
