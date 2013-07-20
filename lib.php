@@ -98,18 +98,3 @@ function local_qmul_system_role_sync_cron() {
     }
     mtrace('qmul_system_role_sync: local_qmul_system_role_sync_cron() finished at ' . date('H:i:s'));
 }
-stem_role_sync_cron() {
-    $settings = get_config('local_qmul_system_role_sync');
-    if (empty($settings->cronenabled)) {
-        return;
-    }
-
-    mtrace('qmul_system_role_sync: local_qmul_system_role_sync_cron() started at '. date('H:i:s'));
-    try {
-        local_qmul_system_role_sync_process($settings);
-    } catch (Exception $e) {
-        mtrace('qmul_system_role_sync: local_qmul_system_role_sync_cron() failed with an exception:');
-        mtrace($e->getMessage());
-    }
-    mtrace('qmul_system_role_sync: local_qmul_system_role_sync_cron() finished at ' . date('H:i:s'));
-}
