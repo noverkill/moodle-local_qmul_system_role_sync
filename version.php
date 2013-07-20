@@ -15,6 +15,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2013040401;
+$plugin->version = 2013040404;
 $plugin->requires = 2010112400;
 $plugin->cron = 100; // Testing value//86400;  //once a daytudents system enrolment (CLI)';
