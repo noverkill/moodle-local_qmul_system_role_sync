@@ -44,8 +44,5 @@ raise_memory_limit('1024M');                        // just in case
 
 //check the privileges
 
-$user = authenticate_user_login('admin', 'Pa5$w0rd');    // authenticate musername in moodle
-require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM), $user);
-
 // process role assignment
 local_qmul_system_role_sync_process();

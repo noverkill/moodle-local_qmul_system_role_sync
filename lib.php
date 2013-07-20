@@ -24,22 +24,12 @@ function local_qmul_system_role_sync_process() {
     $line_number = 0;
     $users_assigned = 0;
     $users_notassigned = 0;
-    $config = get_config('local/qmul_system_role_sync');
+    $config = get_config('qmul_system_role_sync');
 
-    if (empty($config))
-        $config = new stdClass();
-
-// let's define few useful strings  -  path on moodle01 production server, dedicated to upload MIS and other needed files
-
-    if (!defined($config->filepath)){
-        $config->filepath = '//u//web//qmulmis//mis_uploads//';      //location pointed to QMUL by ULCC to upload MIS and other files
-        }
-    if (!defined($config->filename)){
-        $config->filename = 'BUPT_accounts.csv';                    // filename containing all JP Students usernames
-        }
-    if (!defined($config->rolename)){
-        $config->rolename = 'JP Student';                           // role name to assign on the system level
-        }
+    if (empty($config)) {
+		 mtrace('qmul_system_role_sync: Config not set...');
+	        return;
+	}
 
     $role = $DB->get_record('role', array('name'=>$config->rolename));  // name of the role to assign to system context
     $context = get_context_instance( CONTEXT_SYSTEM);
@@ -48,7 +38,7 @@ function local_qmul_system_role_sync_process() {
 //get users from the file - file syntax: one column of usernames separated by line termination (\r\n),
 //first row contains "username" string - will be skipped in processing
 
-    $arrLines = file($config->filepath.$config->filename);
+    $arrLines = file($config->filepath.'/'.$config->filename);
 
     if (empty($arrLines)) {
         mtrace('qmul_system_role_sync: empty file, finishing...');
@@ -94,6 +84,21 @@ function local_qmul_system_role_sync_process() {
  */
 
 function local_qmul_system_role_sync_cron() {
+    $settings = get_config('local_qmul_system_role_sync');
+    if (empty($settings->cronenabled)) {
+        return;
+    }
+
+    mtrace('qmul_system_role_sync: local_qmul_system_role_sync_cron() started at '. date('H:i:s'));
+    try {
+        local_qmul_system_role_sync_process($settings);
+    } catch (Exception $e) {
+        mtrace('qmul_system_role_sync: local_qmul_system_role_sync_cron() failed with an exception:');
+        mtrace($e->getMessage());
+    }
+    mtrace('qmul_system_role_sync: local_qmul_system_role_sync_cron() finished at ' . date('H:i:s'));
+}
+stem_role_sync_cron() {
     $settings = get_config('local_qmul_system_role_sync');
     if (empty($settings->cronenabled)) {
         return;
