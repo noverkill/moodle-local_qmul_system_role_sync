@@ -15,6 +15,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2012102202;
-//$plugin->cron = 86400;  //once a day
-//$plugin->component = 'QMUL JP Students system enrollment (CLI)';
+$plugin->version = 2013040404;
+$plugin->requires = 2010112400;
+$plugin->cron = 86400;  //once a daytudents system enrolment (CLI)';
